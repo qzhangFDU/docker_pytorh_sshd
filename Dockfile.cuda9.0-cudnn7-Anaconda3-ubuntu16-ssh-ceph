@@ -14,8 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # install basic dependencies
 RUN apt-get update 
-RUN apt-get install -y wget \
-		vim openssh-server curl vim net-tools kmod ceph-common ceph-fuse git
+RUN apt-get install -y wget openssh-server curl vim net-tools kmod ceph-common ceph-fuse git
         
 RUN mkdir -p /var/run/sshd
 RUN echo 'root:screencast' | chpasswd
