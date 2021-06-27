@@ -43,6 +43,9 @@ RUN bash ~/anaconda3.sh -b -p /home/anaconda3 \
 	&& rm ~/anaconda3.sh \ 
 	&& echo "export PATH=/home/anaconda3/bin:$PATH" >> ~/.bashrc \
 	&& /bin/bash -c "source /root/.bashrc" 
+RUN touch  /root/.bash_profile
+RUN  echo "if test -f ~/.bashrc ; then \n   source ~/.bashrc \n fi"  |  tee  /root/.bash_profile > /dev/null
+
 
 # change mirror
 RUN mkdir ~/.pip \
