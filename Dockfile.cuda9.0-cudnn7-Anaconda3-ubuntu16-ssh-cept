@@ -1,0 +1,52 @@
+ARG repository
+FROM nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04
+
+# ENV CUDNN_VERSION 7.3.1.20
+# LABEL com.nvidia.cudnn.version="${CUDNN_VERSION}"
+
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+            libcudnn7=$CUDNN_VERSION-1+cuda9.0 && \
+    apt-mark hold libcudnn7 && \
+    rm -rf /var/lib/apt/lists/*
+
+# install basic dependencies
+RUN apt-get update 
+RUN apt-get install -y wget \
+		vim openssh-server curl vim net-tools kmod ceph-common ceph-fuse git
+        
+RUN mkdir -p /var/run/sshd
+RUN echo 'root:screencast' | chpasswd
+RUN sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+RUN sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+# SSH login fix. Otherwise user is kicked off after login
+RUN sed 's@session\s*required\s*pam_loginuid.so@session optional pam_loginuid.so@g' -i /etc/pam.d/sshd
+
+ENV NOTVISIBLE "in users profile"
+RUN echo "export VISIBLE=now" >> /etc/profile
+# Add ENV from main ENV
+RUN echo 'export $(cat /proc/1/environ |tr '\0' '\n' | xargs)' | tee -a /root/.profile
+
+# Add lab specific information
+RUN echo  "Acquire::http::proxy \"http://10.176.51.14:3128\";"  | tee /etc/apt/apt.conf.d/proxy.conf > /dev/null
+
+RUN touch  /etc/ceph/ceph.conf
+RUN echo  "[global]\n  fsid = 4255d7cc-81a5-11eb-8f38-a0369fe61953\n  mon_host = 10.176.51.19 10.176.51.16 10.176.51.22" |  tee  /etc/ceph/ceph.conf > /dev/null
+
+
+# install Anaconda3
+RUN wget https://mirrors.tuna.tsinghua.edu.cn/anaconda/archive/Anaconda3-5.2.0-Linux-x86_64.sh -O ~/anaconda3.sh
+RUN bash ~/anaconda3.sh -b -p /home/anaconda3 \
+	&& rm ~/anaconda3.sh \ 
+	&& echo "export PATH=/home/anaconda3/bin:$PATH" >> ~/.bashrc \
+	&& /bin/bash -c "source /root/.bashrc" 
+
+# change mirror
+RUN mkdir ~/.pip \
+	&& cd ~/.pip 	
+RUN	echo -e "[global]\nindex-url = https://pypi.mirrors.ustc.edu.cn/simple/" >> ~/pip.conf
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
+
